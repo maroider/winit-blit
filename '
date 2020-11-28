@@ -1,0 +1,52 @@
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
+
+use lazy_static::lazy_static;
+use x11_dl::xlib::Xlib;
+
+use crate::{PixelBufferCreationError, PixelBufferFormatType};
+
+lazy_static! {
+    static ref XLIB: Xlib = Xlib::open().unwrap();
+}
+
+pub struct XlibPixelBuffer {
+    width: u32,
+    height: u32,
+    pixmap: u64,
+    display: *mut c_void,
+}
+
+impl XlibPixelBuffer {
+    pub unsafe fn new(
+        width: u32,
+        height: u32,
+        format: PixelBufferFormatType,
+        handle: raw_window_handle::unix::XlibHandle,
+    ) -> Result<Self, PixelBufferCreationError> {
+        let pixmap = (XLIB.XCreatePixmap)(
+            mem::transmute(handle.display),
+            handle.window,
+            width,
+            height,
+            24,
+        );
+        assert_ne!(pixmap, x11_dl::xlib::BadValue as u64);
+        dbg!(pixmap);
+        Ok(Self {
+            pixmap,
+            width,
+            height,
+            display: handle.display,
+        })
+    }
+}
+
+impl std::ops::Drop for XlibPixelBuffer {
+    fn drop(&mut self) {
+        unsafe { XLIB.XFreePixmap() };
+    }
+}
+
