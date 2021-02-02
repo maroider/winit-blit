@@ -18,6 +18,10 @@ fn main() {
             event: WindowEvent::CloseRequested,
             window_id,
         } if window_id == window.id() => *control_flow = ControlFlow::Exit,
+        Event::WindowEvent {
+            event: WindowEvent::Resized(_),
+            ..
+        } => window.request_redraw(),
         Event::RedrawRequested(window_id) => {
             if window_id == window.id() {
                 let (width, height): (u32, u32) = window.inner_size().into();
